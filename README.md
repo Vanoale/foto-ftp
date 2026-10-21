@@ -1,4 +1,4 @@
-# Foto FTP
+# Gi-Ma Foto Upload
 
 App Android minimale: scatti una foto, viene salvata in JPEG sul telefono e caricata
 in automatico in una cartella del tuo server FTP.
