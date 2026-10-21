@@ -9,8 +9,8 @@ in automatico in una cartella del tuo server FTP o di una cartella di rete Windo
    - **SMB**: server, porta (445), utente, password, dominio (facoltativo; si può anche scrivere
      `DOMINIO\utente` nel campo utente), condivisione e cartella dentro la condivisione.
      Supporta SMB2/SMB3; il telefono deve essere sulla stessa rete del server o in VPN.
- Con **Prova connessione** verifichi
-   che tutto sia corretto, poi **Salva**.
+
+   Con **Prova connessione** verifichi che tutto sia corretto, poi **Salva**.
 2. Nella schermata principale premi **Scatta foto**: si apre la fotocamera del telefono.
 3. La foto viene salvata come `IMG_AAAAMMGG_HHMMSS.jpg` in
    `Android/data/it.alessandro.fotoftp/files/Pictures/` e messa in coda per l'upload.
