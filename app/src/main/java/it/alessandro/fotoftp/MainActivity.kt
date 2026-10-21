@@ -32,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -188,6 +189,7 @@ private fun SettingsScreen(onClose: () -> Unit) {
     val context = LocalContext.current
     val store = remember { SettingsStore(context) }
     val initial = remember { store.load() }
+    var protocol by rememberSaveable { mutableStateOf(initial.protocol) }
     var host by rememberSaveable { mutableStateOf(initial.host) }
     var port by rememberSaveable { mutableStateOf(initial.port.toString()) }
     var user by rememberSaveable { mutableStateOf(initial.username) }
@@ -195,23 +197,28 @@ private fun SettingsScreen(onClose: () -> Unit) {
     var dir by rememberSaveable { mutableStateOf(initial.remoteDir) }
     var passive by rememberSaveable { mutableStateOf(initial.passiveMode) }
     var ftps by rememberSaveable { mutableStateOf(initial.useFtps) }
+    var share by rememberSaveable { mutableStateOf(initial.share) }
+    var domain by rememberSaveable { mutableStateOf(initial.domain) }
     var status by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
 
     fun current() = FtpSettings(
+        protocol = protocol,
         host = host.trim(),
-        port = port.toIntOrNull() ?: 21,
+        port = port.toIntOrNull() ?: protocol.defaultPort,
         username = user.trim(),
         password = pass,
         remoteDir = dir.trim().ifEmpty { "/" },
         passiveMode = passive,
         useFtps = ftps,
+        share = share.trim(),
+        domain = domain.trim(),
     )
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Impostazioni FTP") },
+                title = { Text("Impostazioni upload") },
                 navigationIcon = {
                     IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Indietro") }
                 },
@@ -222,26 +229,52 @@ private fun SettingsScreen(onClose: () -> Unit) {
             Modifier.padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            OutlinedTextField(host, { host = it }, label = { Text("Server (es. ftp.miosito.it)") },
+            Text("Tipo di upload", style = MaterialTheme.typography.titleSmall)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                for (p in Protocol.entries) {
+                    RadioButton(selected = protocol == p, onClick = {
+                        // Se la porta era quella standard del vecchio protocollo, passa a quella del nuovo.
+                        if (port.isEmpty() || port == protocol.defaultPort.toString()) port = p.defaultPort.toString()
+                        protocol = p
+                        status = null
+                    })
+                    Text(if (p == Protocol.FTP) "FTP" else "SMB (cartella di rete)")
+                    Spacer(Modifier.padding(8.dp))
+                }
+            }
+            val isSmb = protocol == Protocol.SMB
+            OutlinedTextField(host, { host = it },
+                label = { Text(if (isSmb) "Server (es. 192.168.1.10 o nas.azienda.local)" else "Server (es. ftp.miosito.it)") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(port, { port = it.filter(Char::isDigit) }, label = { Text("Porta") },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             OutlinedTextField(user, { user = it }, label = { Text("Utente") },
                 singleLine = true, modifier = Modifier.fillMaxWidth())
+            if (isSmb) {
+                OutlinedTextField(domain, { domain = it }, label = { Text("Dominio (facoltativo, es. AZIENDA)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+            }
             OutlinedTextField(pass, { pass = it }, label = { Text("Password") },
                 singleLine = true, modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-            OutlinedTextField(dir, { dir = it }, label = { Text("Cartella remota (es. /foto)") },
-                singleLine = true, modifier = Modifier.fillMaxWidth())
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Modalità passiva", Modifier.weight(1f))
-                Switch(passive, { passive = it })
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Connessione sicura (FTPS)", Modifier.weight(1f))
-                Switch(ftps, { ftps = it })
+            if (isSmb) {
+                OutlinedTextField(share, { share = it }, label = { Text("Condivisione (es. Foto)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(dir, { dir = it }, label = { Text("Cartella nella condivisione (es. Cantiere\\2026)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+            } else {
+                OutlinedTextField(dir, { dir = it }, label = { Text("Cartella remota (es. /foto)") },
+                    singleLine = true, modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Modalità passiva", Modifier.weight(1f))
+                    Switch(passive, { passive = it })
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Connessione sicura (FTPS)", Modifier.weight(1f))
+                    Switch(ftps, { ftps = it })
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedButton(onClick = {
@@ -250,7 +283,7 @@ private fun SettingsScreen(onClose: () -> Unit) {
                     scope.launch {
                         status = withContext(Dispatchers.IO) {
                             try {
-                                FtpUploader.testConnection(s)
+                                Uploader.testConnection(s)
                                 "Connessione riuscita ✓"
                             } catch (e: Exception) {
                                 "Errore: ${e.message ?: e.javaClass.simpleName}"

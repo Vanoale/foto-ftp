@@ -12,8 +12,8 @@ android {
         applicationId = "it.alessandro.fotoftp"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
     }
 
     buildTypes {
@@ -27,6 +27,11 @@ android {
     }
     kotlinOptions {
         jvmTarget = "17"
+    }
+    packaging {
+        resources {
+            excludes += setOf("META-INF/versions/9/OSGI-INF/MANIFEST.MF", "META-INF/DEPENDENCIES", "META-INF/INDEX.LIST")
+        }
     }
     buildFeatures {
         compose = true
@@ -44,4 +49,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("commons-net:commons-net:3.11.1")
+    implementation("com.hierynomus:smbj:0.15.0")
 }

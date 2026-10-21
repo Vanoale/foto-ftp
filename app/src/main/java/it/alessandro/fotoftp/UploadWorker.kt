@@ -15,7 +15,7 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * Carica una foto in FTP. Se manca la rete aspetta che torni; se l'upload fallisce
+ * Carica una foto via FTP o SMB. Se manca la rete aspetta che torni; se l'upload fallisce
  * riprova automaticamente (fino a 5 tentativi).
  */
 class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -28,10 +28,10 @@ class UploadWorker(context: Context, params: WorkerParameters) : CoroutineWorker
         }
         val settings = SettingsStore(applicationContext).load()
         if (!settings.isComplete) {
-            return@withContext Result.failure(workDataOf(KEY_ERROR to "Impostazioni FTP mancanti"))
+            return@withContext Result.failure(workDataOf(KEY_ERROR to "Impostazioni di upload mancanti"))
         }
         try {
-            FtpUploader.upload(settings, file)
+            Uploader.upload(settings, file)
             Result.success()
         } catch (e: Exception) {
             if (runAttemptCount < 4) Result.retry()
